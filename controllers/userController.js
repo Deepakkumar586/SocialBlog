@@ -7,7 +7,8 @@ exports.getAlluser = async(req,res)=>{
         if(users){
             return res.status(200).json({
                 success:true,
-                message:"Fetch all user Data"
+                message:"Fetch all user Data",
+                data:users
             })
         }
 
@@ -48,7 +49,8 @@ exports.signup = async(req,res)=>{
         const newUser = await User.create({
             name,
             email,
-            password:hashedPassword
+            password:hashedPassword,
+            blogs:[]
         })
 
         if(newUser){

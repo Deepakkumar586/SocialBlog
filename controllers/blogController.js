@@ -1,4 +1,7 @@
+
+const  mongoose  = require("mongoose");
 const Blogs = require("../model/Blog");
+const User = require('../model/userModel');
 
 exports.getAllBlogs = async(req,res)=>{
     try{
@@ -35,26 +38,49 @@ exports.blogAdd = async(req,res)=>{
         
         const {title,description,image,user} = req.body;
 
-        if(!title || !description || !image || !user){
-            return res.status(400).send({
+        // if(!title || !description || !image || !user){
+        //     return res.status(400).send({
+        //         success:false,
+        //         message:"All fields required"
+        //     })
+        // }
+
+        const existUser = await User.findById(user);
+
+        if(!existUser){
+            return  res.status(401).send({
                 success:false,
-                message:"All fields required"
+                message:"Unable to find By This ID"
             })
         }
 
-        // if(!user){
-        //     return  res.status(401).send({
-        //         success:false,
-        //         message:"Pahle aap Signup Karo"
-        //     })
-        // }
-        // create a blog
-        const blog = await Blogs.create({
+        const blog = new Blogs({
             title,
             description,
             image,
             user
-        })
+        });
+        try{
+            const session = await mongoose.startSession();
+           session.startTransaction();
+           await blog.save({session});
+           existUser.blogs.push(blog);
+           await existUser.save({session})
+           await session.commitTransaction();
+
+        }
+        catch(err){
+            console.log("something error",err)
+            return res.status(500).json({
+                success:false,
+                message:err
+            })
+
+        }
+        
+        // create a blog
+        
+
 
         if(blog){
             console.log("added Blogs");
@@ -135,6 +161,31 @@ exports.getById = async (req,res)=>{
         return res.status(500).json({
             success:false,
             message:"couldn't Fetched  Id Blogs"
+        })
+    }
+}
+
+
+exports.deleteBlog = async(req,res)=>{
+    try{
+            const id = req.params.id;
+            const blog = await Blogs.findByIdAndRemove(id);
+            // ;
+            
+             
+
+            if(blog){
+                return res.status(200).json({
+                    success:true,
+                    message:"Blogs Deleted"
+                })
+            }
+    }
+    catch(err){
+        console.log("Not Deleted Blog",err)
+        return res.status(500).json({
+            success:false,
+            message:"couldn't Delete Id Blogs"
         })
     }
 }
